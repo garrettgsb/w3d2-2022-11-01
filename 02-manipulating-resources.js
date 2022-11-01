@@ -436,14 +436,17 @@ const authors = [
 
 // Blog Actions
 
+// GET /blogs/:id
 function getBlogById(id) {
   return blogs.find(blog => blog.id === id);
 }
 
+// GET /authors/5/blogs
 function getBlogsForAuthor(authorId) {
   return blogs.filter(blog => blog.authorId.toLowerCase() === Number(authorId));
 }
 
+// POST /blogs/:id
 function editBlog(id, newValues) {
   const blog = getBlogById(id);
   if (!blog) throw new Error(`Blog with ID ${id} could not be found`);
@@ -451,12 +454,14 @@ function editBlog(id, newValues) {
   blogs[blogIdx] = { ...blog, ...newValues };
 }
 
+// POST /blogs
 function addBlog(authorName, title, body) {
   const author = getAuthorByName(authorName);
   if (!author) throw new Error(`No author with name ${authorName}!`);
   blogs.push({id: nextId(blogs), authorId: author.id, title, body});
 }
 
+// POST /blogs/:id/delete
 function deleteBlog(id) {
   const blog = getBlogById(id);
   if (!blog) throw new Error(`Blog with ID ${id} could not be found`);
@@ -471,18 +476,76 @@ function nextId(arr) {
 
 // Author Actions
 
+// GET /authors/:id
 function getAuthorById(id) { return authors.find(author => author.id === Number(id)); }
+
+// GET /author/:id <- Respond to IDs or to names
+// GET /author-by-name/:name <- Aliased resource name
+// GET /author-search?name=Mary <- Endpoint to search by name
 function getAuthorByName(name) { return authors.find(author => author.name === name); }
+
+
+function getAuthor(nameOrId) {
+  return getAuthorById(nameOrId) || getAuthorByName(nameOrId);
+}
+
+// POST /authors/:id
 function editAuthor(id, newValues) {
   const author = getAuthorById(id);
   if (!author) throw new Error(`Author with ID ${id} could not be found`);
   const authorIdx = authors.indexOf(author);
   authors[authorIdx] = { ...author, ...newValues };
 }
+
+// POST /authors
 function addAuthor(name, email) { authors.push({ id: nextId(authors), name, email }); }
+
+// POST /authors/:id/delete
 function deleteAuthor(id) {
   const author = getAuthorById(id);
   if (!author) throw new Error(`Author with ID ${id} could not be found`);
   const authorIdx = authors.indexOf(author);
   authors.splice(authorIdx, 1);
 }
+
+const express = require('express');
+const app = express();
+
+
+app.get('/author-search', (request, response) => {
+  request.params
+  request.body
+  request.query
+  const _author = request.query.authorName;
+  const author = getAuthorByName(_author);
+  response.send(`
+  <h1>Search</h1>
+  ${JSON.stringify(author)}
+  <form method='GET' action='/author-search'>
+    <input name='authorName'>
+    <button>🕵️‍♀️</button>
+  </form>
+  `);
+});
+
+app.listen(8080);
+
+/*
+
+GET /blogs                -> Just render the blogs array
+GET /blogs/:id            -> getBlogById()
+POST /blogs               -> addBlog()
+POST /blogs/:id           -> editBlog()
+POST /blogs/:id/delete    -> deleteBlog()
+
+GET /authors              -> Just render the authors array
+GET /authors/:id          -> getAuthorById() (Might also involve getBlogsForAuthor())
+POST /authors             -> addAuthor()
+POST /authors/:id         -> editAuthor()
+POST /authors/:id/delete  -> deleteAuthor()
+
+Bonus:
+
+GET /authors/:id/blogs    -> getBlogsForAuthor()
+
+*/
